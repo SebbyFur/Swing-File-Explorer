@@ -138,16 +138,18 @@ public class Main extends JFrame {
 
         File f = new File(path);
         String[] fileNames = f.list();
-        for (String fileName : fileNames) {
-            boolean isFolder = new File(path + "/" + fileName).isDirectory();
-            DisplayPanel temp = new DisplayPanel(fileName, isFolder);
-            if (isFolder) {
-                temp.addMouseListener(new FolderClickEvent(fileName));
-            } else {
-                temp.addMouseListener(new FileRightClickEvent(fileName));
+        if (fileNames.length != 0) {
+            for (String fileName : fileNames) {
+                boolean isFolder = new File(path + "/" + fileName).isDirectory();
+                DisplayPanel temp = new DisplayPanel(fileName, isFolder);
+                if (isFolder) {
+                    temp.addMouseListener(new FolderClickEvent(fileName));
+                } else {
+                    temp.addMouseListener(new FileRightClickEvent(fileName));
+                }
+                temp.addMouseListener(new SelectedPanelDisplayer());
+                content_window.add(temp);
             }
-            temp.addMouseListener(new SelectedPanelDisplayer());
-            content_window.add(temp);
         }
         validate();
         repaint();

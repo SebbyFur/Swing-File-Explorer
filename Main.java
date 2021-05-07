@@ -22,20 +22,41 @@ public class Main extends JFrame {
             e.printStackTrace();
         }
 
+        content_window.setLayout(new GridBagLayout());
+
 	    setLocationRelativeTo(null);
 	    setTitle("Game save name");
 	    setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         getContentPane().setLayout(new FlowLayout());
-        setResizable(true);
-        setSize(1200, 800);
+        setResizable(false);
+        setSize(1280, 720);
+
+        getContentPane().setLayout(new GridBagLayout());
+
+        JPanel controlPanel = new JPanel(new GridBagLayout());
+        JPanel controlPanelFirstRow = new JPanel(new GridBagLayout());
+
+        controlPanel.add(controlPanelFirstRow);
+
+        GridBagConstraints test = new GridBagConstraints();
+        test.gridx = 0;
+        test.gridy = 0;
+        controlPanelFirstRow.add(new JButton("Arrière"), test);
+
+        test.gridx++;
+        controlPanelFirstRow.add(new JButton("Avant"), test);
+        test.gridx++;
+        JTextArea e = new JTextArea(actualPath);
+        e.setPreferredSize(new Dimension(1100, 25));
+        controlPanelFirstRow.add(e, test);
 
         updatePanel(actualPath);
 
         JScrollPane scrollPane = new JScrollPane(content_window);
-        scrollPane.setMaximumSize(new Dimension(1000, 500));
+        scrollPane.setMaximumSize(new Dimension(getWidth(), 25));
         scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
 
-        getContentPane().add(scrollPane);
+        getContentPane().add(controlPanel);
 
         setVisible(true);
     }
@@ -108,9 +129,6 @@ public class Main extends JFrame {
         public void mouseClicked(MouseEvent e) {
             DisplayPanel f = (DisplayPanel)(e.getComponent());
             f.displayNotSelected();
-            if (e.getButton() == 3) {                
-                addControlPanel(e.getXOnScreen(), e.getYOnScreen());
-            }
             if (e.getButton() == 1 && e.getClickCount() >= 1) {
                 if (currentSelected != f) {
                     if (currentSelected != null) {
@@ -130,11 +148,19 @@ public class Main extends JFrame {
 
     public void updatePanel(String path) {
         content_window.removeAll();
+        System.out.println(new File(actualPath).getParentFile());
 
-        DisplayPanel back = new DisplayPanel("../", true);
-        back.addMouseListener(new BackClickEvent());
-        back.addMouseListener(new SelectedPanelDisplayer());
-        content_window.add(back);
+        GridBagConstraints placement = new GridBagConstraints();
+        placement.gridx = 0;
+        placement.gridy = 0;
+
+        if (new File(actualPath).getParentFile() != null) {
+            DisplayPanel back = new DisplayPanel("../", true);
+            back.addMouseListener(new BackClickEvent());
+            back.addMouseListener(new SelectedPanelDisplayer());
+            content_window.add(back, placement);
+            placement.gridx++;
+        }
 
         File f = new File(path);
         String[] fileNames = f.list();
@@ -148,9 +174,15 @@ public class Main extends JFrame {
                     temp.addMouseListener(new FileRightClickEvent(fileName));
                 }
                 temp.addMouseListener(new SelectedPanelDisplayer());
-                content_window.add(temp);
+                content_window.add(temp, placement);
+                placement.gridx++;
+                if (placement.gridx % 8 == 0) {
+                    placement.gridy++;
+                    placement.gridx = 0;
+                }
             }
         }
+        content_window.setPreferredSize(new Dimension(1200, 800));
         validate();
         repaint();
     }

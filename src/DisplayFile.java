@@ -9,6 +9,5 @@ public class DisplayFile extends JLabel {
         this.setHorizontalAlignment(JLabel.CENTER);
         Image img = new ImageIcon("textures/file.png").getImage().getScaledInstance(53, 53, Image.SCALE_DEFAULT);
         this.setIcon(new ImageIcon(img));
-        this.setMinimumSize(new Dimension(1, 1));
     }
 }

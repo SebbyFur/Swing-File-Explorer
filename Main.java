@@ -4,12 +4,18 @@ import java.nio.file.Files;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.util.Vector;
 import src.*;
 
 public class Main extends JFrame {
-    private JPanel content_window = new JPanel();
+    private JPanel contentPanel = new JPanel();
     private String actualPath;
-    private static DisplayPanel currentSelected = null;
+    private JTextArea actualPathField;
+    private DisplayPanel currentSelected = null;
+    private int position = 0;
+    private Vector<String> destinations = new Vector<String>();
+    private JButton backButton;
+    private JButton forwardButton;
 
     public static void main(String[] args) {
         new Main();
@@ -21,8 +27,12 @@ public class Main extends JFrame {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        //destinations.setSize(10);
 
-        content_window.setLayout(new GridBagLayout());
+        contentPanel.setLayout(new GridBagLayout());
+        JScrollPane contentPanelScroller = new JScrollPane(contentPanel);
+        contentPanelScroller.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+        contentPanelScroller.setMaximumSize(new Dimension(800, 25));
 
 	    setLocationRelativeTo(null);
 	    setTitle("Game save name");
@@ -31,32 +41,62 @@ public class Main extends JFrame {
         setResizable(false);
         setSize(1280, 720);
 
+        GridBagConstraints mainWindowPlacement = new GridBagConstraints();
         getContentPane().setLayout(new GridBagLayout());
+        mainWindowPlacement.gridx = 0;
+        mainWindowPlacement.gridy = 0;
+        mainWindowPlacement.insets = new Insets(20, 0, 0, 0);
 
+        GridBagConstraints controlPanelPlacement = new GridBagConstraints();
         JPanel controlPanel = new JPanel(new GridBagLayout());
-        JPanel controlPanelFirstRow = new JPanel(new GridBagLayout());
+        controlPanelPlacement.gridx = 0;
+        controlPanelPlacement.gridy = 0;
 
-        controlPanel.add(controlPanelFirstRow);
+        JPanel pathControl = new JPanel(new FlowLayout());
+        controlPanel.add(pathControl, controlPanelPlacement);
 
-        GridBagConstraints test = new GridBagConstraints();
-        test.gridx = 0;
-        test.gridy = 0;
-        controlPanelFirstRow.add(new JButton("Arrière"), test);
+        backButton = new JButton("<");
+        backButton.addActionListener(new BackForwardButtonEvent(0));
+        backButton.setEnabled(false);
+        forwardButton = new JButton(">");
+        forwardButton.addActionListener(new BackForwardButtonEvent(1));
+        actualPathField = new JTextArea(actualPath);
+        int actualPathFieldWidth = -30+(int)(getWidth()-backButton.getPreferredSize().getWidth()-forwardButton.getPreferredSize().getWidth());
+        actualPathField.setPreferredSize(new Dimension(1000, 25));
 
-        test.gridx++;
-        controlPanelFirstRow.add(new JButton("Avant"), test);
-        test.gridx++;
-        JTextArea e = new JTextArea(actualPath);
-        e.setPreferredSize(new Dimension(1100, 25));
-        controlPanelFirstRow.add(e, test);
+        pathControl.add(backButton);
+        pathControl.add(forwardButton);
+        pathControl.add(actualPathField);
 
+        controlPanelPlacement.gridy++;
+        GridBagConstraints actionControlPlacement = new GridBagConstraints();
+        JPanel actionControl = new JPanel(new GridBagLayout());
+        controlPanel.add(actionControl, controlPanelPlacement);
+        actionControlPlacement.gridx = 0;
+        actionControlPlacement.gridy = 0;
+        actionControlPlacement.insets = new Insets(0, 10, 0, 0);
+        JButton smallSizeButton = new JButton("Petites icônes");
+        JButton midSizeButton = new JButton("Moyennes icônes");
+        JButton bigSizeButton = new JButton("Grandes icônes");
+        JButton deleteButton = new JButton("Supprimer");
+        JButton copyButton = new JButton("Copier");
+        JButton pasteButton = new JButton("Coller");
+        JButton renameButton = new JButton("Renommer");
+        JButton listDisplayButton = new JButton("Affichage par liste");
+        JButton tableDisplayButton = new JButton("Affichage par tableau");
+
+        JButton[] actionButtons = {smallSizeButton, midSizeButton, bigSizeButton, deleteButton, copyButton, pasteButton, renameButton, listDisplayButton, tableDisplayButton};
+
+        for (int i = 0; i < actionButtons.length; i++) {
+            actionControl.add(actionButtons[i], actionControlPlacement);
+            actionControlPlacement.gridx++;
+        }
+
+        getContentPane().add(controlPanel, mainWindowPlacement);
+
+        mainWindowPlacement.gridy++;
+        getContentPane().add(contentPanelScroller, mainWindowPlacement);
         updatePanel(actualPath);
-
-        JScrollPane scrollPane = new JScrollPane(content_window);
-        scrollPane.setMaximumSize(new Dimension(getWidth(), 25));
-        scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
-
-        getContentPane().add(controlPanel);
 
         setVisible(true);
     }
@@ -72,6 +112,8 @@ public class Main extends JFrame {
             if (e.getButton() == 1 && e.getClickCount() >= 2) {                
                 actualPath = actualPath + "/" + nextFolder;
                 updatePanel(actualPath);
+                destinations.add(actualPath);
+                position++;
             }
         }
 
@@ -81,12 +123,13 @@ public class Main extends JFrame {
         public void mouseReleased(MouseEvent e){}
     }
 
-    public class BackClickEvent implements MouseListener {
+    public class BackFolderEvent implements MouseListener {
         public void mouseClicked(MouseEvent e) {
             try {
                 if (e.getButton() == 1 && e.getClickCount() >= 2) {                
                     actualPath = new File(actualPath).getParentFile().getCanonicalPath();
                     updatePanel(actualPath);
+                    destinations.add(actualPath);
                 }
             } catch(IOException err) {
                 err.printStackTrace();
@@ -146,19 +189,45 @@ public class Main extends JFrame {
         public void mouseReleased(MouseEvent e){}
     }
 
+    public class BackForwardButtonEvent implements ActionListener {
+        private int direction;
+
+        public BackForwardButtonEvent(int direction) {
+            this.direction = direction;
+        }
+
+        public void actionPerformed(ActionEvent e) {
+            System.out.println(destinations.size());
+            position = position + (direction == 0 ? -1 : +1);
+            if (position == 0) {
+                backButton.setEnabled(false);
+            }
+            if (position == 1 && direction == 1) {
+                backButton.setEnabled(true);
+            }
+            if (destinations.size() == position-1) {
+                forwardButton.setEnabled(false);
+            }
+            if (destinations.size() == position-2 ) {
+                forwardButton.setEnabled(true);
+            }
+        }
+    }
+
     public void updatePanel(String path) {
-        content_window.removeAll();
+        contentPanel.removeAll();
         System.out.println(new File(actualPath).getParentFile());
 
         GridBagConstraints placement = new GridBagConstraints();
         placement.gridx = 0;
         placement.gridy = 0;
+        placement.insets = new Insets(0, 15, 0, 0);
 
         if (new File(actualPath).getParentFile() != null) {
             DisplayPanel back = new DisplayPanel("../", true);
-            back.addMouseListener(new BackClickEvent());
+            back.addMouseListener(new BackFolderEvent());
             back.addMouseListener(new SelectedPanelDisplayer());
-            content_window.add(back, placement);
+            contentPanel.add(back, placement);
             placement.gridx++;
         }
 
@@ -174,23 +243,17 @@ public class Main extends JFrame {
                     temp.addMouseListener(new FileRightClickEvent(fileName));
                 }
                 temp.addMouseListener(new SelectedPanelDisplayer());
-                content_window.add(temp, placement);
+                contentPanel.add(temp, placement);
                 placement.gridx++;
-                if (placement.gridx % 8 == 0) {
+                if (placement.gridx % 7 == 0) {
                     placement.gridy++;
                     placement.gridx = 0;
                 }
             }
         }
-        content_window.setPreferredSize(new Dimension(1200, 800));
+        contentPanel.setPreferredSize(new Dimension(-200+getWidth(), 550));
+        actualPathField.setText(actualPath);
         validate();
         repaint();
-    }
-
-    public void addControlPanel(int posX, int posY) {
-        JPanel tg = new JPanel();
-        tg.setBounds(posX, posY, 200, 100);
-        tg.add(new JLabel("tg"));
-        content_window.add(tg);
     }
 }

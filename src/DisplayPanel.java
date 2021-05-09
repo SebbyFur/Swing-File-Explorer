@@ -5,14 +5,21 @@ import javax.swing.*;
 import java.io.File;
 
 public class DisplayPanel extends JPanel {
+    private String contentName;
+
     public DisplayPanel(String contentName, boolean isFolder) {
         super();
+        this.contentName = contentName;
         this.setLayout(new BorderLayout());
         this.add(isFolder ? new DisplayFolder() : new DisplayFile());
-        NextLineJLabel text = new NextLineJLabel(contentName);
+        JLabel text = new JLabel(contentName);
         text.setHorizontalAlignment(JLabel.CENTER);
         this.add(text, BorderLayout.PAGE_END);
-        this.setPreferredSize(new Dimension(300, 200));
+        this.setPreferredSize(new Dimension(100, 80));
+    }
+
+    public String getContentName() {
+        return contentName;
     }
 
     public void displaySelected() {

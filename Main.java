@@ -9,13 +9,14 @@ import src.*;
 
 public class Main extends JFrame {
     private JPanel contentPanel = new JPanel();
-    private String actualPath;
-    private JTextArea actualPathField;
-    private DisplayPanel currentSelected = null;
-    private int position = 0;
-    private Vector<String> destinations = new Vector<String>();
     private JButton backButton;
     private JButton forwardButton;
+    private Vector<String> destinations = new Vector<String>();
+    private DisplayPanel currentSelected = null;
+    private String actualPath;
+    private JTextField actualPathField;
+    private int position = 0;
+    private File fileFakeClipBoard = null;
 
     public static void main(String[] args) {
         new Main();
@@ -27,12 +28,12 @@ public class Main extends JFrame {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        //destinations.setSize(10);
+        destinations.add(actualPath);
 
         contentPanel.setLayout(new GridBagLayout());
         JScrollPane contentPanelScroller = new JScrollPane(contentPanel);
         contentPanelScroller.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
-        contentPanelScroller.setMaximumSize(new Dimension(800, 25));
+        contentPanelScroller.setPreferredSize(new Dimension(1000, 500));
 
 	    setLocationRelativeTo(null);
 	    setTitle("Game save name");
@@ -60,7 +61,8 @@ public class Main extends JFrame {
         backButton.setEnabled(false);
         forwardButton = new JButton(">");
         forwardButton.addActionListener(new BackForwardButtonEvent(1));
-        actualPathField = new JTextArea(actualPath);
+        forwardButton.setEnabled(false);
+        actualPathField = new JTextField(actualPath);
         int actualPathFieldWidth = -30+(int)(getWidth()-backButton.getPreferredSize().getWidth()-forwardButton.getPreferredSize().getWidth());
         actualPathField.setPreferredSize(new Dimension(1000, 25));
 
@@ -79,6 +81,7 @@ public class Main extends JFrame {
         JButton midSizeButton = new JButton("Moyennes icônes");
         JButton bigSizeButton = new JButton("Grandes icônes");
         JButton deleteButton = new JButton("Supprimer");
+        deleteButton.addActionListener(new DeleteButton());
         JButton copyButton = new JButton("Copier");
         JButton pasteButton = new JButton("Coller");
         JButton renameButton = new JButton("Renommer");
@@ -103,36 +106,33 @@ public class Main extends JFrame {
 
     public class FolderClickEvent implements MouseListener {
         private String nextFolder;
+        private int direction;
 
-        public FolderClickEvent(String nextFolder) {
+        public FolderClickEvent(String nextFolder, int direction) {
             this.nextFolder = nextFolder;
+            this.direction = direction;
         }
 
         public void mouseClicked(MouseEvent e) {
-            if (e.getButton() == 1 && e.getClickCount() >= 2) {                
-                actualPath = actualPath + "/" + nextFolder;
-                updatePanel(actualPath);
-                destinations.add(actualPath);
-                position++;
-            }
-        }
-
-        public void mousePressed(MouseEvent e){}
-        public void mouseEntered(MouseEvent e){}
-        public void mouseExited(MouseEvent e){}
-        public void mouseReleased(MouseEvent e){}
-    }
-
-    public class BackFolderEvent implements MouseListener {
-        public void mouseClicked(MouseEvent e) {
-            try {
-                if (e.getButton() == 1 && e.getClickCount() >= 2) {                
-                    actualPath = new File(actualPath).getParentFile().getCanonicalPath();
+            if (e.getButton() == 1 && e.getClickCount() >= 2) {
+                try {
+                    if (direction == 0) {
+                        actualPath = new File(actualPath).getParentFile().getCanonicalPath();
+                    } else {
+                        actualPath = actualPath + "/" + nextFolder;
+                    }             
                     updatePanel(actualPath);
+                    currentSelected = null;
+                    position++;
+                    for (int i = position; i < destinations.size(); i=i) {
+                        destinations.remove(i);
+                    }
                     destinations.add(actualPath);
+                    backButton.setEnabled(true);
+                    forwardButton.setEnabled(false);
+                } catch(IOException err) {
+                    err.printStackTrace();
                 }
-            } catch(IOException err) {
-                err.printStackTrace();
             }
         }
 
@@ -197,35 +197,42 @@ public class Main extends JFrame {
         }
 
         public void actionPerformed(ActionEvent e) {
-            System.out.println(destinations.size());
             position = position + (direction == 0 ? -1 : +1);
+            System.out.println(position + " " + destinations.size());
             if (position == 0) {
                 backButton.setEnabled(false);
             }
             if (position == 1 && direction == 1) {
                 backButton.setEnabled(true);
             }
-            if (destinations.size() == position-1) {
+            if (destinations.size()-1 == position) {
                 forwardButton.setEnabled(false);
             }
-            if (destinations.size() == position-2 ) {
+            if (destinations.size()-2 == position) {
                 forwardButton.setEnabled(true);
             }
+            updatePanel(destinations.get(position));
+        }
+    }
+
+    public class DeleteButton implements ActionListener {
+        public void actionPerformed(ActionEvent e) {
+            deleteFile(new File(actualPath + "/" + currentSelected.getContentName()));
+            updatePanel(actualPath);
         }
     }
 
     public void updatePanel(String path) {
         contentPanel.removeAll();
-        System.out.println(new File(actualPath).getParentFile());
 
         GridBagConstraints placement = new GridBagConstraints();
         placement.gridx = 0;
         placement.gridy = 0;
         placement.insets = new Insets(0, 15, 0, 0);
 
-        if (new File(actualPath).getParentFile() != null) {
+        if (new File(path).getParentFile() != null) {
             DisplayPanel back = new DisplayPanel("../", true);
-            back.addMouseListener(new BackFolderEvent());
+            back.addMouseListener(new FolderClickEvent(null, 0));
             back.addMouseListener(new SelectedPanelDisplayer());
             contentPanel.add(back, placement);
             placement.gridx++;
@@ -238,7 +245,7 @@ public class Main extends JFrame {
                 boolean isFolder = new File(path + "/" + fileName).isDirectory();
                 DisplayPanel temp = new DisplayPanel(fileName, isFolder);
                 if (isFolder) {
-                    temp.addMouseListener(new FolderClickEvent(fileName));
+                    temp.addMouseListener(new FolderClickEvent(fileName, 1));
                 } else {
                     temp.addMouseListener(new FileRightClickEvent(fileName));
                 }
@@ -251,9 +258,30 @@ public class Main extends JFrame {
                 }
             }
         }
-        contentPanel.setPreferredSize(new Dimension(-200+getWidth(), 550));
-        actualPathField.setText(actualPath);
+        //contentPanel.setPreferredSize(new Dimension(-200+getWidth(), 550));
+        actualPathField.setText(path);
+        actualPath = path;
         validate();
         repaint();
+    }
+
+    public boolean deleteFile(File toDelete) {
+        if (toDelete.isDirectory()) {
+            for (File delNext : toDelete.listFiles()) {
+                if (!(deleteFile(delNext))) {
+                    JOptionPane.showMessageDialog(this, "Fichier/dossier non supprimé :(");
+                    break;
+                }
+            }
+        }
+        return toDelete.delete();
+    }
+
+    public void addFileToFakeClipboard(File fileFakeClipBoard) {
+        if (fileFakeClipBoard != null) {
+            this.fileFakeClipBoard = fileFakeClipBoard;
+        } else {
+            JOptionPane.showMessageDialog(this, "Sélectionnez un fichier avant d'essayer de copier enfin!!!");
+        }
     }
 }

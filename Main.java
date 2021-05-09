@@ -5,6 +5,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.Vector;
+import java.nio.file.StandardCopyOption;
 import src.*;
 
 public class Main extends JFrame {
@@ -57,10 +58,10 @@ public class Main extends JFrame {
         controlPanel.add(pathControl, controlPanelPlacement);
 
         backButton = new JButton("<");
-        backButton.addActionListener(new BackForwardButtonEvent(0));
+        backButton.addActionListener(new BackForwardButton(0));
         backButton.setEnabled(false);
         forwardButton = new JButton(">");
-        forwardButton.addActionListener(new BackForwardButtonEvent(1));
+        forwardButton.addActionListener(new BackForwardButton(1));
         forwardButton.setEnabled(false);
         actualPathField = new JTextField(actualPath);
         int actualPathFieldWidth = -30+(int)(getWidth()-backButton.getPreferredSize().getWidth()-forwardButton.getPreferredSize().getWidth());
@@ -83,12 +84,13 @@ public class Main extends JFrame {
         JButton deleteButton = new JButton("Supprimer");
         deleteButton.addActionListener(new DeleteButton());
         JButton copyButton = new JButton("Copier");
+        copyButton.addActionListener(new CopyButton());
         JButton pasteButton = new JButton("Coller");
-        JButton renameButton = new JButton("Renommer");
+        pasteButton.addActionListener(new PasteButton());
         JButton listDisplayButton = new JButton("Affichage par liste");
         JButton tableDisplayButton = new JButton("Affichage par tableau");
 
-        JButton[] actionButtons = {smallSizeButton, midSizeButton, bigSizeButton, deleteButton, copyButton, pasteButton, renameButton, listDisplayButton, tableDisplayButton};
+        JButton[] actionButtons = {smallSizeButton, midSizeButton, bigSizeButton, deleteButton, copyButton, pasteButton, listDisplayButton, tableDisplayButton};
 
         for (int i = 0; i < actionButtons.length; i++) {
             actionControl.add(actionButtons[i], actionControlPlacement);
@@ -121,8 +123,8 @@ public class Main extends JFrame {
                     } else {
                         actualPath = actualPath + "/" + nextFolder;
                     }             
-                    updatePanel(actualPath);
                     currentSelected = null;
+                    updatePanel(actualPath);
                     position++;
                     for (int i = position; i < destinations.size(); i=i) {
                         destinations.remove(i);
@@ -162,43 +164,15 @@ public class Main extends JFrame {
         public void mouseReleased(MouseEvent e){}
     }
 
-    public class FileRightClickEvent implements MouseListener {
-        private String nextFolder;
-
-        public FileRightClickEvent(String nextFolder) {
-            this.nextFolder = nextFolder;
-        }
-
-        public void mouseClicked(MouseEvent e) {
-            DisplayPanel f = (DisplayPanel)(e.getComponent());
-            f.displayNotSelected();
-            if (e.getButton() == 1 && e.getClickCount() >= 1) {
-                if (currentSelected != f) {
-                    if (currentSelected != null) {
-                        currentSelected.displayNotSelected();
-                    }
-                    currentSelected = f;
-                    f.displaySelected();
-                } 
-            }
-        }
-
-        public void mousePressed(MouseEvent e){}
-        public void mouseEntered(MouseEvent e){}
-        public void mouseExited(MouseEvent e){}
-        public void mouseReleased(MouseEvent e){}
-    }
-
-    public class BackForwardButtonEvent implements ActionListener {
+    public class BackForwardButton implements ActionListener {
         private int direction;
 
-        public BackForwardButtonEvent(int direction) {
+        public BackForwardButton(int direction) {
             this.direction = direction;
         }
 
         public void actionPerformed(ActionEvent e) {
             position = position + (direction == 0 ? -1 : +1);
-            System.out.println(position + " " + destinations.size());
             if (position == 0) {
                 backButton.setEnabled(false);
             }
@@ -217,8 +191,38 @@ public class Main extends JFrame {
 
     public class DeleteButton implements ActionListener {
         public void actionPerformed(ActionEvent e) {
-            deleteFile(new File(actualPath + "/" + currentSelected.getContentName()));
-            updatePanel(actualPath);
+            if (currentSelected != null) {
+                deleteFile(new File(actualPath + "/" + currentSelected.getContentName()));
+                updatePanel(actualPath);
+            } else {
+                JOptionPane.showMessageDialog(Main.this, "Veuillez sélectionner un fichier à supprimer !");
+            }
+        }
+    }
+
+    public class CopyButton implements ActionListener {
+        public void actionPerformed(ActionEvent e) {
+            if (currentSelected != null) {
+                File toCopy = new File((actualPath + "/" + currentSelected.getContentName()));
+                if (!(toCopy.isDirectory())) {
+                    addFileToFakeClipboard(toCopy);
+                } else {
+                    JOptionPane.showMessageDialog(Main.this, "Impossible de copier des dossiers pour le moment :( !");
+                }
+            } else {
+                JOptionPane.showMessageDialog(Main.this, "Veuillez sélectionner un fichier à copier !");
+            }
+        }
+    }
+
+    public class PasteButton implements ActionListener {
+        public void actionPerformed(ActionEvent e) {
+            if (fileFakeClipBoard != null) {
+                pasteFile();
+                updatePanel(actualPath);
+            } else {
+                JOptionPane.showMessageDialog(Main.this, "Veuillez d'abord copier un fichier !");
+            }
         }
     }
 
@@ -232,8 +236,8 @@ public class Main extends JFrame {
 
         if (new File(path).getParentFile() != null) {
             DisplayPanel back = new DisplayPanel("../", true);
-            back.addMouseListener(new FolderClickEvent(null, 0));
             back.addMouseListener(new SelectedPanelDisplayer());
+            back.addMouseListener(new FolderClickEvent(null, 0));
             contentPanel.add(back, placement);
             placement.gridx++;
         }
@@ -244,12 +248,10 @@ public class Main extends JFrame {
             for (String fileName : fileNames) {
                 boolean isFolder = new File(path + "/" + fileName).isDirectory();
                 DisplayPanel temp = new DisplayPanel(fileName, isFolder);
+                temp.addMouseListener(new SelectedPanelDisplayer());
                 if (isFolder) {
                     temp.addMouseListener(new FolderClickEvent(fileName, 1));
-                } else {
-                    temp.addMouseListener(new FileRightClickEvent(fileName));
                 }
-                temp.addMouseListener(new SelectedPanelDisplayer());
                 contentPanel.add(temp, placement);
                 placement.gridx++;
                 if (placement.gridx % 7 == 0) {
@@ -258,7 +260,6 @@ public class Main extends JFrame {
                 }
             }
         }
-        //contentPanel.setPreferredSize(new Dimension(-200+getWidth(), 550));
         actualPathField.setText(path);
         actualPath = path;
         validate();
@@ -278,10 +279,15 @@ public class Main extends JFrame {
     }
 
     public void addFileToFakeClipboard(File fileFakeClipBoard) {
-        if (fileFakeClipBoard != null) {
-            this.fileFakeClipBoard = fileFakeClipBoard;
-        } else {
-            JOptionPane.showMessageDialog(this, "Sélectionnez un fichier avant d'essayer de copier enfin!!!");
+        this.fileFakeClipBoard = fileFakeClipBoard;
+    }
+
+    public void pasteFile() {
+        try {
+            String fileName = fileFakeClipBoard.getName();
+            Files.copy(fileFakeClipBoard.toPath(), new File(actualPath + "/" + fileName).toPath(), StandardCopyOption.REPLACE_EXISTING);
+        } catch(IOException err) {
+            err.printStackTrace();
         }
     }
 }

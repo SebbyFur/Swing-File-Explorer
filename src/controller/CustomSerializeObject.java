@@ -1,24 +1,24 @@
-package src;
+package src.controller;
 
 import java.io.*;
 
 public class CustomSerializeObject {
-    public static void serialize(Object object, String path, String fileName) {
+    public static void serialize(Object object, String fileName) {
         try {
-            FileOutputStream fileOut = new FileOutputStream(path + fileName);
+            FileOutputStream fileOut = new FileOutputStream("./" + fileName);
             ObjectOutputStream out = new ObjectOutputStream(fileOut);
             out.writeObject(object);
             out.close();
             fileOut.close();
-        } catch (IOException i) {
-            ;
+        } catch (IOException err) {
+            err.printStackTrace();
         }
     }
 
-    public static Object deserialize(String path, String fileName) {
+    public static Object deserialize(String fileName) {
         Object ret = null;
         try {
-            FileInputStream fileIn = new FileInputStream(path + fileName);
+            FileInputStream fileIn = new FileInputStream("./" + fileName);
             ObjectInputStream in = new ObjectInputStream(fileIn);
             ret = in.readObject();
             in.close();

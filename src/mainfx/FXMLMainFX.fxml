@@ -1,0 +1,7 @@
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns:fx="http://javafx.com/fxml" fx:controller="src.mainfx.ControllerMainFX">
+    <Button text="Recharger [Swing]" fx:id="bouton" onAction="#swingUpdate"/>
+    <ListView fx:id="list"/>
+</VBox>

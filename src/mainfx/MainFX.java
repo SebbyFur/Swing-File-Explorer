@@ -1,4 +1,10 @@
-package src.mainfx;
+/**
+* Classe MainFX, classe principale pour l'interface graphique en FX.
+* @author DIOT Sébastien
+* @version 10/05/2021
+*/
+
+package mainfx;
 
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
@@ -10,7 +16,7 @@ public class MainFX extends Application {
     @Override
     public void start(Stage primaryStage) throws Exception {
         primaryStage.setTitle("Explorateur de fichiers FX");
-        Parent root = FXMLLoader.load(getClass().getResource("./FXMLMainFX.fxml"));
+        Parent root = FXMLLoader.load(getClass().getResource("FXMLMainFX.fxml"));
         primaryStage.setScene(new Scene(root, 300, 275));
         primaryStage.show();
     }

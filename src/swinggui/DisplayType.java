@@ -1,14 +1,22 @@
-package src.swinggui;
+/**
+* Enumeration DisplayType, utilisée pour la méthode "updatePanel" dans MainSwing afin de choisir
+* entre un affichage en liste ou en tableau.
+* @author DIOT Sébastien
+* @version 10/05/2021
+*/
+
+package swinggui;
 
 import java.awt.*;
 
 public enum DisplayType {
-    TABLE(BorderLayout.PAGE_END),
-    LIST(BorderLayout.LINE_END);
+    /**
+    * Mode d'affichage en tableau
+    */
+    TABLE,
 
-    public String position;
-    
-    private DisplayType(String position) {
-        this.position = position;
-    }
+    /**
+    * Mode d'affichage en liste
+    */
+    LIST;
 }

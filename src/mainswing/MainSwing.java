@@ -1,4 +1,10 @@
-package src.mainswing;
+/**
+* Classe MainSwing, classe principale pour l'interface graphique en Swing.
+* @author DIOT Sébastien
+* @version 10/05/2021
+*/
+
+package mainswing;
 
 import java.io.File;
 import java.io.IOException;
@@ -8,26 +14,69 @@ import java.awt.*;
 import java.awt.event.*;
 import java.util.Vector;
 import java.nio.file.StandardCopyOption;
-import src.swinggui.*;
-import src.controller.*;
+import swinggui.*;
+import controller.*;
 
 public class MainSwing extends JFrame {
+    /**
+    * Panel contenant les DisplayPanel pour afficher les dossiers/fichiers
+    */
     private JPanel contentPanel = new JPanel();
+
+    /**
+    * Bouton pour revenir en arrière
+    */
     private JButton backButton;
+
+    /**
+    * Bouton pour aller en avant
+    */
     private JButton forwardButton;
+
+    /**
+    * Vecteur contenant les destinations précédentes (utilisé pour les boutons back et forward)
+    */
     private Vector<String> destinations = new Vector<String>();
+
+    /**
+    * DisplayPanel utilisé pour savoir quel dossier/fichier est actuellement sélectionné
+    */
     private DisplayPanel currentSelected = null;
+
+    /**
+    * Type d'affichage (tableau ou liste)
+    */
     private DisplayType mode = DisplayType.TABLE;
+
+    /**
+    * Objet sérialisé. Chemin actuel.
+    */
     private ActualPath actualPath;
+
+    /**
+    * JTextField pour afficher le chemin actuel (et aussi pour le changer)
+    */
     private JTextField actualPathField;
+
+    /**
+    * Position dans le vecteur destinations.
+    */
     private int position = 0;
+
+    /**
+    * Faux presse-papier où l'on stocke la référence du fichier copié pour pouvoir le réutiliser dans la méthode paste.
+    */
     private File fileFakeClipBoard = null;
 
     public static void main(String[] args) {
         new MainSwing();
     }
-
+    
+    /**
+    * Constructeur par défaut
+    */
     public MainSwing() {
+        // Recherche du fichier serializedPath.txt. S'il n'exsite pas, on en créé un à partir du chemin existant.
         try {
             actualPath = new ActualPath(new File("./").getCanonicalPath());
             if (!(new File("./serializedPath.txt").exists())) {
@@ -36,6 +85,7 @@ public class MainSwing extends JFrame {
         } catch (IOException e) {
             e.printStackTrace();
         }
+
         destinations.add(actualPath.getActualPath());
 
         contentPanel.setLayout(new GridBagLayout());
@@ -115,10 +165,26 @@ public class MainSwing extends JFrame {
         setVisible(true);
     }
 
+    /**
+    * Classe interne FolderClickEvent implémentant MouseListener. Utilisé lors d'un double clic sur un DisplayPanel.
+    */
     public class FolderClickEvent implements MouseListener {
+        /**
+        * Fichier suivant sous forme de String.
+        */
         private String nextFolder;
+
+        /**
+        * Direction. (0 pour arrière, 1 pour avant)
+        */
         private int direction;
 
+        
+        /**
+        * Constructeur par initialisation
+        * @param nextFolder le fichier suivant sous forme de String
+        * @param direction la direction (0 pour arrière, 1 pour avant)
+        */
         public FolderClickEvent(String nextFolder, int direction) {
             this.nextFolder = nextFolder;
             this.direction = direction;
@@ -153,6 +219,10 @@ public class MainSwing extends JFrame {
         public void mouseReleased(MouseEvent e){}
     }
 
+    /**
+    * Classe interne SelectedPanelDisplayer implémentant MouseListener. Utilisée pour afficher les bordures
+    * autour du DisplayPanel représentant la sélection actuelle.
+    */
     public class SelectedPanelDisplayer implements MouseListener {
         public void mouseClicked(MouseEvent e) {
             DisplayPanel f = (DisplayPanel)(e.getComponent());
@@ -173,9 +243,19 @@ public class MainSwing extends JFrame {
         public void mouseReleased(MouseEvent e){}
     }
 
+    /**
+    * Classe interne BackForwardButton implémentant ActionListener. Utilisée pour les boutons back et forward.
+    */
     public class BackForwardButton implements ActionListener {
+        /**
+        * Direction (0 pour arrière, 1 pour avant)
+        */
         private int direction;
 
+        /**
+        * Constructeur par initialisation.
+        * @param direction direction (0 pour arrière, 1 pour avant)
+        */
         public BackForwardButton(int direction) {
             this.direction = direction;
         }
@@ -198,6 +278,9 @@ public class MainSwing extends JFrame {
         }
     }
 
+    /**
+    * Classe interne TextFieldNavigation implémentant ActionListener. Utilisé pour le JTextField actualPathField.
+    */
     public class TextFieldNavigation implements ActionListener {
         public void actionPerformed(ActionEvent e) {
             File goTo = new File(actualPathField.getText());
@@ -209,11 +292,15 @@ public class MainSwing extends JFrame {
         }
     }
 
+    /**
+    * Classe interne DeleteButton implémentant ActionListener. Utilisée pour le bouton supprimer.
+    */
     public class DeleteButton implements ActionListener {
         public void actionPerformed(ActionEvent e) {
             if (currentSelected != null) {
                 if (!((currentSelected.getContentName()).equals("../"))) {    
                     deleteFile(new File(actualPath.getActualPath() + "/" + currentSelected.getContentName()));
+                    currentSelected = null;
                     updatePanel(actualPath.getActualPath());
                 } else {
                     JOptionPane.showMessageDialog(MainSwing.this, "Vous ne pouvez pas supprimer le dossier parent !");
@@ -224,6 +311,9 @@ public class MainSwing extends JFrame {
         }
     }
 
+    /**
+    * Classe interne CopyButton implémentant ActionListener. Utilisée pour le bouton copier.
+    */
     public class CopyButton implements ActionListener {
         public void actionPerformed(ActionEvent e) {
             if (currentSelected != null) {
@@ -239,9 +329,19 @@ public class MainSwing extends JFrame {
         }
     }
 
+    /**
+    * Classe interne ChangeModeButton implémentant ActionListener. Utilisée pour les boutons d'affichage.
+    */
     public class ChangeModeButtons implements ActionListener {
+        /**
+        * Type d'affichage (TABLE ou LIST).
+        */
         private DisplayType type;
 
+        /**
+        * Constructeur par initialisation.
+        * @param type type d'affichage (TABLE ou LIST).
+        */
         public ChangeModeButtons(DisplayType type) {
             this.type = type;
         }
@@ -252,6 +352,9 @@ public class MainSwing extends JFrame {
         }
     }
 
+    /**
+    * Classe interne PasteButton implémentant ActionListener. Utilisée pour le bouton coller.
+    */
     public class PasteButton implements ActionListener {
         public void actionPerformed(ActionEvent e) {
             if (fileFakeClipBoard != null) {
@@ -263,13 +366,24 @@ public class MainSwing extends JFrame {
         }
     }
 
+    /**
+    * Classe interne FXUpdateButton implémentant ActionListener. Utilisée pour le bouton reload.
+    */
     public class FXUpdateButton implements ActionListener {
         public void actionPerformed(ActionEvent e) {
-            String deserializedPath = (String)(CustomSerializeObject.deserialize("serializedPath.txt"));
-            updatePanel(deserializedPath);
+            ActualPath deserializedPath = (ActualPath)(CustomSerializeObject.deserialize("serializedPath.txt"));
+            String deserializedPathName = deserializedPath.getActualPath();
+            updatePanel(deserializedPathName);
         }
     }
 
+    /**
+    * Méthode updatePanel pour mettre à jour le JPanel contenant tous les DisplayPanels.
+    * Un String est utilisé en tant que paramètre pour le nouveau chemin à afficher, mais dans la partie FX,
+    * on utilise plutôt un File. Il n'y a aucune raison particulière à ce changement, je voulais juste voir
+    * laquelle des deux solutions était la meilleure et je n'ai plus le temps de modifier le projet :(
+    * @param path le nouveau chemin à afficher sous forme de String
+    */
     public void updatePanel(String path) {
         contentPanel.removeAll();
 
@@ -281,6 +395,7 @@ public class MainSwing extends JFrame {
             placement.anchor = GridBagConstraints.WEST;
         }
 
+        // Ici, si le fichier parent est null, on ne met pas de DisplayPanel de retour en arrière.
         if (new File(path).getParentFile() != null) {
             DisplayPanel back = new DisplayPanel("../", true, mode);
             back.addMouseListener(new SelectedPanelDisplayer());
@@ -294,6 +409,7 @@ public class MainSwing extends JFrame {
         }
 
         File f = new File(path);
+        // On liste tous les fichiers dans le répertoire. Si le répertoire est vide, rien n'est ajouté.
         String[] fileNames = f.list();
         if (fileNames != null) {
             for (String fileName : fileNames) {
@@ -317,11 +433,16 @@ public class MainSwing extends JFrame {
         }
         actualPathField.setText(path);
         actualPath.setActualPath(path);
-        CustomSerializeObject.serialize(actualPath.getActualPath(), "serializedPath.txt");
+        CustomSerializeObject.serialize(actualPath, "serializedPath.txt");
         validate();
         repaint();
     }
 
+    /**
+    * Méthode récursive deleteFile.
+    * @param toDelete fichier/dossier à supprimer
+    * @return un booléen (pour savoir si oui ou non le fichier a été supprimé) 
+    */
     public boolean deleteFile(File toDelete) {
         if (toDelete.isDirectory()) {
             for (File delNext : toDelete.listFiles()) {
@@ -334,10 +455,17 @@ public class MainSwing extends JFrame {
         return toDelete.delete();
     }
 
+    /**
+    * Méthode addFileToFakeClipboard. Utilisée pour ajouter un fichier au faux presse-papier.
+    * @param fileFakeClipBoard le fichier à ajouter au faux presse-papier.
+    */
     public void addFileToFakeClipboard(File fileFakeClipBoard) {
         this.fileFakeClipBoard = fileFakeClipBoard;
     }
 
+    /**
+    * Méthode pasteFile. Utilisée pour coller les fichiers.
+    */
     public void pasteFile() {
         try {
             String fileName = fileFakeClipBoard.getName();

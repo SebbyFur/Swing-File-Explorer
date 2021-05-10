@@ -1,9 +1,14 @@
 Small file explorer written with Swing and FX in Java.
 
-Pour lancer la partie Swing:
-javac src/mainswing/*.java
-java src.mainswing.MainSwing
+Bonjour ! Voici mon petit explorateur de fichier écrit en Swing et en FX. Il utilise la sérialisation pour permettre la communication entre les fenêtres.
 
-Pour lancer la partie FX:
-javac --module-path {chemin vers les libraires fx} --add-modules javafx.controls,javafx.fxml src/mainfx/*.java
-java --module-path {chemin vers les libraires fx} --add-modules javafx.controls,javafx.fxml src.mainfx.MainFX
+Créé par DIOT Sébastien.
+
+Lancement du projet (Swing et FX):
+java --module-path {chemin vers les libraires FX} --add-modules javafx.controls,javafx.fxml -cp cls Main
+
+Lancement du projet (FX):
+java --module-path {chemin vers les libraires FX} --add-modules javafx.controls,javafx.fxml -cp cls mainfx.MainFX
+
+Lancement du projet (Swing):
+java -cp cls mainswing.MainSwing
